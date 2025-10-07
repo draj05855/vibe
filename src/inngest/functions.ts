@@ -1,10 +1,16 @@
+import { Sandbox } from "@e2b/code-interpreter"
 import {  gemini, createAgent } from "@inngest/agent-kit";
 import { inngest } from "./client";
+import { getSandbox } from "@/app/api/inngest/utils";
 
 export const helloWorld = inngest.createFunction(
   { id: "hello-world" },
   { event: "test/hello.world" },
-  async ({ event }) => {
+  async ({ event,step }) => {
+    const SandboxId = await step.run("get-sandbox-id" , async () =>{
+      const sandbox = await Sandbox.create("vibe-nextjs-00001");
+      return sandbox.sandboxId;
+    });
     const codeAgent = createAgent({
       name: "codeagent",
       system:
@@ -15,8 +21,13 @@ export const helloWorld = inngest.createFunction(
     const { output } = await codeAgent.run(
   `Write the following snnipet: ${event.data.value}`,
 );
-console.log(output);
 
-    return { output };
+const sandboxUrl = await step.run("get-sandbox-url" , async () =>{
+  const sandbox = await getSandbox(SandboxId)
+  const host =  sandbox.getHost(3000);
+  return `https://${host}`;
+})
+
+    return { output, sandboxUrl };
   }
 );
