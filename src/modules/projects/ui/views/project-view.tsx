@@ -9,14 +9,14 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ProjectHeader } from "../components/project-header";
-
+import { FragmentWeb } from "../components/fragment-web";
 
 interface Props {
   projectId: string;
 }
 
 export const ProjectView = ({ projectId }: Props) => {
-  const [activeFragment , setActiveFragment] = useState<Fragment | null>(null);
+  const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
 
   return (
     <div className="h-screen">
@@ -27,19 +27,19 @@ export const ProjectView = ({ projectId }: Props) => {
           className="flex flex-col min-h-0"
         >
           <Suspense fallback={<p>Loading project...</p>}>
-          <ProjectHeader projectId={projectId}/>
+            <ProjectHeader projectId={projectId} />
           </Suspense>
-            <Suspense fallback={<p>Loading Project...</p>}>
-          <MessagesContainer 
-          projectId={projectId} 
-          activeFragment={activeFragment}
-          setActiveFragment={setActiveFragment}
-          />
+          <Suspense fallback={<p>Loading Project...</p>}>
+            <MessagesContainer
+              projectId={projectId}
+              activeFragment={activeFragment}
+              setActiveFragment={setActiveFragment}
+            />
           </Suspense>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={65} minSize={50}>
-          TODO: Preview
+          {!!activeFragment && <FragmentWeb data={activeFragment}/>}
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
