@@ -7,36 +7,38 @@ import { create } from "domain";
 import { TRPCError } from "@trpc/server";
 
 export const projectRouter = createTRPCRouter({
-  getOne: baseProcedure
-  .input(z.object({
-    id: z.string().min(1, { message: "Id is required"})
-  }))
-  .query(async ({ input }) => {
-    const existingProject = await prisma.project.findUnique({
-      where: {
-        id: input.id,
-      },
+  getMany: baseProcedure.query(async () => {
+    return prisma.project.findMany({
+      orderBy: { createdAt: "desc" },
     });
-
-    if(!existingProject){
-      throw new TRPCError({ code: "NOT_FOUND", message: "project not found"});
-    }
-    return existingProject;
   }),
+
+  getOne: baseProcedure
+    .input(z.object({
+      id: z.string().min(1, { message: "Id is required" })
+    }))
+    .query(async ({ input }) => {
+      const existingProject = await prisma.project.findUnique({
+        where: { id: input.id },
+      });
+      if (!existingProject) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "project not found" });
+      }
+      return existingProject;
+    }),
+
   create: baseProcedure
     .input(
       z.object({
         value: z.string()
-        .min(1, { message: "Value is required" })
-        .max(10000, { message: "Meassage is too long"})
+          .min(1, { message: "Value is required" })
+          .max(10000, { message: "Message is too long" }),
       })
     )
     .mutation(async ({ input }) => {
       const createdProject = await prisma.project.create({
         data: {
-          name: generateSlug(2, {
-            format: "kebab",
-          }),
+          name: generateSlug(2, { format: "kebab" }),
           message: {
             create: {
               content: input.value,
@@ -46,6 +48,7 @@ export const projectRouter = createTRPCRouter({
           },
         },
       });
+
       await inngest.send({
         name: "code-agent/run",
         data: {
