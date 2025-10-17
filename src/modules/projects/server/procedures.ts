@@ -1,25 +1,24 @@
 import { prisma } from "@/lib/db";
 import { generateSlug } from "random-word-slugs";
-import { baseProcedure, createTRPCRouter } from "@/trpc/init";
+import { protectedProcedure, createTRPCRouter } from "@/trpc/init";
 import { inngest } from "@/inngest/client";
 import { z } from "zod";
 import { create } from "domain";
 import { TRPCError } from "@trpc/server";
 
 export const projectRouter = createTRPCRouter({
-  getMany: baseProcedure.query(async () => {
-    return prisma.project.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-  }),
+ 
 
-  getOne: baseProcedure
+  getOne: protectedProcedure
     .input(z.object({
       id: z.string().min(1, { message: "Id is required" })
     }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const existingProject = await prisma.project.findUnique({
-        where: { id: input.id },
+        where: { 
+          id: input.id,
+          userId: ctx.auth.userId,
+        },
       });
       if (!existingProject) {
         throw new TRPCError({ code: "NOT_FOUND", message: "project not found" });
@@ -27,7 +26,20 @@ export const projectRouter = createTRPCRouter({
       return existingProject;
     }),
 
-  create: baseProcedure
+     getMany: protectedProcedure
+     .query(async ( { ctx }) => {
+      const projects = await prisma.project.findMany({
+        where: {
+          userId: ctx.auth.userId,
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
+      return projects;
+     }),
+
+  create: protectedProcedure
     .input(
       z.object({
         value: z.string()
@@ -35,9 +47,10 @@ export const projectRouter = createTRPCRouter({
           .max(10000, { message: "Message is too long" }),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const createdProject = await prisma.project.create({
         data: {
+          userId: ctx.auth.userId,
           name: generateSlug(2, { format: "kebab" }),
           message: {
             create: {
