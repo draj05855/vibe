@@ -14,6 +14,7 @@ import { getSandbox, lastAssistantTextMeassageContent, parseAgentOutput } from "
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "@/prompt";
 import { prisma } from "@/lib/db";
 import { text } from "stream/consumers";
+import { SANDBOX_TIMEOUT } from "./types";
 
 interface AgentState {
   summary: string;
@@ -28,6 +29,7 @@ export const codeAgentFunction = inngest.createFunction(
     // Step 1: Create sandbox
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("vibe-nextjs-00001");
+      await sandbox.setTimeout(SANDBOX_TIMEOUT);
       return sandbox.sandboxId;
     });
 
